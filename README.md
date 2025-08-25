@@ -49,42 +49,45 @@ And additional plugins coming soon! For documentation on building custom plugins
 **Disclosure:** The links above are affiliate links. I may earn a commission from qualifying purchases made through them, at no extra cost to you, which helps maintain and develop this project.
 
 ## Installation
-To install InkyPi, follow these steps:
+To install InkyPi, follow this step-by-step guide:
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/fatihak/InkyPi.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd InkyPi
-    ```
-3. Run the installation script with sudo:
-    ```bash
-    sudo bash install/install.sh [-W <waveshare device model>]
-    ``` 
-     Option: 
-    
-    * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare display.  After the -W option specify the Waveshare device model e.g. epd7in3f.
+**1. Clone the Repository**
 
-    e.g. for Inky displays use:
-    ```bash
-    sudo bash install/install.sh
-    ```
+First, clone this repository to your Raspberry Pi:
+```bash
+git clone https://github.com/rafaeltini/InkyPi_mod.git
+```
 
-    and for [Waveshare displays](#waveshare-display-support) use:
-    ```bash
-    sudo bash install/install.sh -W epd7in3f
-    ```
+**2. Navigate to the Directory**
 
+Change into the newly created directory:
+```bash
+cd InkyPi_mod
+```
 
-After the installation is complete, the script will prompt you to reboot your Raspberry Pi. Once rebooted, the display will update to show the InkyPi splash screen.
+**3. Run the Installation Script**
 
-Note: 
-- The installation script requires sudo privileges to install and run the service. We recommend starting with a fresh installation of Raspberry Pi OS to avoid potential conflicts with existing software or configurations.
-- The installation process will automatically enable the required SPI and I2C interfaces on your Raspberry Pi.
+Execute the installation script with `sudo`. This will install all necessary dependencies and set up the program to run as a service.
+```bash
+sudo bash install/install.sh
+```
 
-For more details, including instructions on how to image your microSD with Raspberry Pi OS, refer to [installation.md](./docs/installation.md). You can also checkout [this YouTube tutorial](https://youtu.be/L5PvQj1vfC4).
+**4. Reboot Your Raspberry Pi**
+
+After the script finishes, it will ask you to reboot. This is required for the changes to take effect.
+
+**5. Configure Your Display**
+
+Once your Raspberry Pi has rebooted, the InkyPi service will start automatically.
+*   Find your Raspberry Pi's IP address (you can use `hostname -I` in the terminal).
+*   Open a web browser on another device on the same network and navigate to `http://<your-pi-ip-address>`.
+*   Go to the **Settings** page.
+*   In the **Display Settings** section, use the **Display Type** dropdown menu to select your specific display model.
+*   Click **Save**.
+
+The display should now be correctly configured and will update with your chosen plugins.
+
+**Note:** The installation script requires `sudo` privileges to install system-wide packages and services. It is recommended to start with a fresh installation of Raspberry Pi OS to avoid potential conflicts. The script will automatically enable the required SPI and I2C interfaces.
 
 ## Update
 To update your InkyPi with the latest code changes, follow these steps:

@@ -20,6 +20,28 @@ class Calendar(BasePlugin):
         template_params['locale_map'] = LOCALE_MAP
         return template_params
 
+    def _get_zone_dimensions(self, zone, full_resolution):
+        width, height = full_resolution
+        if zone == "top-half":
+            return (width, height // 2)
+        elif zone == "bottom-half":
+            return (width, height // 2)
+        elif zone == "left-half":
+            return (width // 2, height)
+        elif zone == "right-half":
+            return (width // 2, height)
+        else: # fullscreen
+            return full_resolution
+
+    def _get_paste_position(self, zone, full_resolution):
+        width, height = full_resolution
+        if zone == "bottom-half":
+            return (0, height // 2)
+        elif zone == "right-half":
+            return (width // 2, 0)
+        else: # top-left corner for fullscreen, top-half, left-half
+            return (0, 0)
+
     def generate_image(self, settings, device_config):
         calendar_urls = settings.get('calendarURLs[]')
         calendar_colors = settings.get('calendarColors[]')
@@ -36,8 +58,15 @@ class Calendar(BasePlugin):
             if not url.strip():
                 raise RuntimeError("Invalid calendar URL")
 
-        dimensions = device_config.get_resolution()
-        if device_config.get_config("orientation") == "vertical":
+        # Get settings for zone and orientation
+        orientation = settings.get("orientation", "horizontal")
+        zone = settings.get("zone", "fullscreen")
+
+        # Determine dimensions based on zone and orientation
+        full_resolution = device_config.get_resolution()
+        dimensions = self._get_zone_dimensions(zone, full_resolution)
+
+        if orientation == "vertical":
             dimensions = dimensions[::-1]
         
         timezone = device_config.get_config("timezone", default="America/New_York")
@@ -63,11 +92,19 @@ class Calendar(BasePlugin):
             "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"))
         }
 
-        image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params)
+        calendar_image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params)
 
-        if not image:
+        if not calendar_image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
-        return image
+
+        # If not fullscreen, create a full-sized canvas and paste the calendar into its zone
+        if zone != "fullscreen":
+            final_image = Image.new("RGB", full_resolution, "white")
+            paste_position = self._get_paste_position(zone, full_resolution)
+            final_image.paste(calendar_image, paste_position)
+            return final_image
+        else:
+            return calendar_image
     
     def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range):
         parsed_events = []

@@ -23,6 +23,23 @@
             {% endfor %}
         </select>
     </div>
+    <div class="form-group">
+        <label for="orientation" class="form-label">Orientation:</label>
+        <select id="orientation" name="orientation" class="form-input">
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="zone" class="form-label">Display Zone:</label>
+        <select id="zone" name="zone" class="form-input">
+            <option value="fullscreen">Full Screen</option>
+            <option value="top-half">Top Half</option>
+            <option value="bottom-half">Bottom Half</option>
+            <option value="left-half">Left Half</option>
+            <option value="right-half">Right Half</option>
+        </select>
+    </div>
 </div>
 
 <div class="form-group">
@@ -200,6 +217,8 @@
                     color: pluginSettings["calendarColors[]"][i]  || '#007BFF'
                 }));
             }
+            document.getElementById('orientation').value = pluginSettings.orientation || 'horizontal';
+            document.getElementById('zone').value = pluginSettings.zone || 'fullscreen';
         }
         
         // populate view mode

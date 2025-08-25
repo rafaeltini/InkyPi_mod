@@ -1,0 +1,10 @@
+{
+    "resolution": [640, 384],
+    "display_type": "epd7in5bc",
+    "orientation": "horizontal",
+    "image_settings": {
+        "contrast": 1.0,
+        "saturation": 1.0
+    },
+    "inverted_image": false
+}
