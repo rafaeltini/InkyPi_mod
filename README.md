@@ -1,5 +1,7 @@
 # InkyPi 
 
+> **Note:** This is a modified version of the original [InkyPi](https://github.com/fatihak/InkyPi) repository by Fatih Ak. This fork is for personal use and experimentation. For the official project, please visit the original repository.
+
 <img src="./docs/images/inky_clock.jpg" />
 
 
