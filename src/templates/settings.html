@@ -10,6 +10,7 @@
         async function handleAction() {
             const form = document.querySelector('.settings-form');
             const formData = new FormData(form);
+            const saveButton = document.querySelector('.action-button');
 
             try {
                 const response = await fetch("{{ url_for('settings.save_settings') }}", {
@@ -20,6 +21,11 @@
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
+                    saveButton.classList.remove('dirty');
+                    saveButton.textContent = 'Save';
+                    document.querySelectorAll('.form-input.dirty').forEach(input => {
+                        input.classList.remove('dirty');
+                    });
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                     form.reset();
@@ -27,6 +33,41 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while processing your request.');
+            }
+        }
+
+        function setDirty(event) {
+            const saveButton = document.querySelector('.action-button');
+            saveButton.classList.add('dirty');
+            saveButton.textContent = 'Save Changes';
+            event.target.classList.add('dirty');
+        }
+
+        async function updatePreview() {
+            const form = document.querySelector('.settings-form');
+            const formData = new FormData(form);
+            const settings = Object.fromEntries(formData.entries());
+            settings.image_settings = {
+                saturation: parseFloat(settings.saturation),
+                contrast: parseFloat(settings.contrast),
+                sharpness: parseFloat(settings.sharpness),
+                brightness: parseFloat(settings.brightness)
+            };
+
+            const response = await fetch("{{ url_for('settings.preview_image') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+
+            if (response.ok) {
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+                document.getElementById('preview-image').src = imageUrl;
+            } else {
+                alert('Failed to load preview.');
             }
         }
 
@@ -109,88 +150,119 @@
         <!-- Settings Content -->
         <form class="settings-form">
             <div id="settings-container">
-                <!-- Device Name -->
-                <div class="form-group">
-                    <label for="deviceName" class="form-label">Device Name:</label>
-                    <input type="text" 
-                           id="deviceName" 
-                           name="deviceName" 
-                           placeholder="Type something..." 
-                           value="{{ device_settings.name }}" 
-                           required 
-                           class="form-input">
-                </div>
-                <div class="form-group nowrap">
-                    <!-- Orientation Dropdown -->
-                    <div class="form-group">
-                        <label for="orientation" class="form-label">Orientation:</label>
-                        <select id="orientation" name="orientation" class="form-input">
-                            <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
-                            <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
-                        </select>
-                    </div>
-                    <div class="form-group nowrap">
-                        <!-- Invert Image Checkbox -->
-                        <label class="form-label" for="invertImage">Invert Image</label>
-                        <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
-                        </label>
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        Device Settings <span class="collapsible-icon">▲</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <!-- Device Name -->
+                        <div class="form-group">
+                            <label for="deviceName" class="form-label">Device Name:</label>
+                            <input type="text"
+                                   id="deviceName"
+                                   name="deviceName"
+                                   placeholder="Type something..."
+                                   value="{{ device_settings.name }}"
+                                   required
+                           class="form-input"
+                           onchange="setDirty(event)">
+                        </div>
+                        <div class="form-group nowrap">
+                            <label class="form-label" for="logSystemStats">Log System Stats</label>
+                                <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %} onchange="setDirty(event)">
+                            </label>
+                        </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <!-- Timezone Dropdown -->
-                    <div class="form-group nowrap">
-                        <label for="timezone" class="form-label">Time Zone:</label>
-                        <input
-                            type="text"
-                            id="timezone"
-                            name="timezoneName"
-                            class="form-input"
-                            list="timezoneList"
-                            placeholder="Type to search..."
-                            value="{{ device_settings.timezone }}"
-                        />
-                        <datalist id="timezoneList">
-                            {% for timezone in timezones %}
-                            <option value="{{ timezone }}"></option>
-                            {% endfor %}
-                        </datalist>
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        Display Settings <span class="collapsible-icon">▲</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <div class="form-group">
+                            <label for="display_type" class="form-label">Display Type:</label>
+                            <select id="display_type" name="display_type" class="form-input" onchange="setDirty(event)">
+                                {% for driver in drivers %}
+                                <option value="{{ driver }}" {% if device_settings.display_type == driver %}selected{% endif %}>{{ driver }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group nowrap">
+                            <!-- Orientation Dropdown -->
+                            <div class="form-group">
+                                <label for="orientation" class="form-label">Orientation:</label>
+                                <select id="orientation" name="orientation" class="form-input" onchange="setDirty(event)">
+                                    <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
+                                    <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
+                                </select>
+                            </div>
+                            <div class="form-group nowrap">
+                                <!-- Invert Image Checkbox -->
+                                <label class="form-label" for="invertImage">Invert Image</label>
+                                <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %} onchange="setDirty(event)">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-group">
+                                <label for="interval">Plugin Cycle Interval:</label>
+                                <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
+                                <span>Every</span>
+                                <input type="number" id="interval" name="interval" class="form-input" required min="1" onchange="setDirty(event)">
+                                <select id="unit" name="unit" class="form-input" required onchange="setDirty(event)">
+                                    <option value="minute">Minute</option>
+                                    <option value="hour">Hour</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        Time Settings <span class="collapsible-icon">▲</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <div class="form-group">
+                            <!-- Timezone Dropdown -->
+                            <div class="form-group nowrap">
+                                <label for="timezone" class="form-label">Time Zone:</label>
+                                <input
+                                    type="text"
+                                    id="timezone"
+                                    name="timezoneName"
+                                    class="form-input"
+                                    list="timezoneList"
+                                    placeholder="Type to search..."
+                                    value="{{ device_settings.timezone }}"
+                                    onchange="setDirty(event)"
+                                />
+                                <datalist id="timezoneList">
+                                    {% for timezone in timezones %}
+                                    <option value="{{ timezone }}"></option>
+                                    {% endfor %}
+                                </datalist>
+                            </div>
 
-                    <!-- Time Format Dropdown -->
-                    <div class="form-group nowrap">
-                        <label for="timeFormat" class="form-label">Time Format:</label>
-                        <select id="timeFormat" name="timeFormat" class="form-input">
-                            <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 Hour (AM/PM)</option>
-                            <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>24 Hour</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="form-group">
-                        <label for="interval">Plugin Cycle Interval:</label>
-                        <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-                        <span>Every</span>
-                        <input type="number" id="interval" name="interval" class="form-input" required min="1">
-                        <select id="unit" name="unit" class="form-input" required>
-                            <option value="minute">Minute</option>
-                            <option value="hour">Hour</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group nowrap">
-                        <label class="form-label" for="logSystemStats">Log System Stats</label>
-                            <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
-                        </label>
+                            <!-- Time Format Dropdown -->
+                            <div class="form-group nowrap">
+                                <label for="timeFormat" class="form-label">Time Format:</label>
+                                <select id="timeFormat" name="timeFormat" class="form-input" onchange="setDirty(event)">
+                                    <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 Hour (AM/PM)</option>
+                                    <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>24 Hour</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Image Settings <span class="collapsible-icon">▼</span>
+                        Image Settings <span class="collapsible-icon">▲</span>
                     </button>
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
                             <label for="saturation" class="form-label" style="min-width: 100px;">Saturation:</label>
+                            <span class="tooltip" title="Adjusts the color intensity. 0.0 is grayscale, 1.0 is original color.">ⓘ</span>
                             <span id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
                             <input
                                 type="range"
@@ -201,10 +273,12 @@
                                 value="{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
+                                onchange="setDirty(event)"
                             />
                         </div>
                         <div class="form-group">
                             <label for="contrast" class="form-label" style="min-width: 100px;">Contrast:</label>
+                            <span class="tooltip" title="Adjusts the difference between light and dark areas.">ⓘ</span>
                             <span id="contrast-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
                             <input
                                 type="range"
@@ -215,10 +289,12 @@
                                 value="{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
+                                onchange="setDirty(event)"
                             />
                          </div>
                         <div class="form-group">
                             <label for="sharpness" class="form-label" style="min-width: 100px;">Sharpness:</label>
+                            <span class="tooltip" title="Adjusts the sharpness of the image. 0.0 is blurred, 1.0 is original.">ⓘ</span>
                             <span id="sharpness-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
                             <input
                                 type="range"
@@ -229,10 +305,12 @@
                                 value="{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
+                                onchange="setDirty(event)"
                             />
                         </div>
                         <div class="form-group">
                             <label for="brightness" class="form-label" style="min-width: 100px;">Brightness:</label>
+                            <span class="tooltip" title="Adjusts the brightness of the image. 0.0 is black, 1.0 is original.">ⓘ</span>
                             <span id="brightness-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
                             <input
                                 type="range"
@@ -243,6 +321,7 @@
                                 value="{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
+                                onchange="setDirty(event)"
                             />
                         </div>
                     </div>
@@ -253,6 +332,20 @@
         <!-- Buttons -->
         <div class="buttons-container">
             <button type="button" onclick="handleAction()" class="action-button">Save</button>
+        </div>
+
+        <div class="collapsible">
+            <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                Live Preview <span class="collapsible-icon">▲</span>
+            </button>
+            <div class="settings-container collapsible-content">
+                <div class="form-group">
+                    <button type="button" onclick="updatePreview()" class="action-button compact">Refresh Preview</button>
+                </div>
+                <div class="image-container">
+                    <img id="preview-image" src="" alt="Live Preview">
+                </div>
+            </div>
         </div>
     </div>
     <!-- Success/Error Modal -->

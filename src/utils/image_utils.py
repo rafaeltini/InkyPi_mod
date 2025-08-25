@@ -76,6 +76,25 @@ def apply_image_enhancement(img, image_settings={}):
 
     return img
 
+def process_image_for_preview(image, settings, resolution):
+    """
+    Applies a series of transformations to an image for preview purposes.
+
+    Args:
+        image (PIL.Image): The image to be processed.
+        settings (dict): A dictionary of settings to apply.
+        resolution (tuple): The resolution of the display.
+
+    Returns:
+        PIL.Image: The processed image.
+    """
+    image = change_orientation(image, settings.get("orientation"))
+    image = resize_image(image, resolution)
+    if settings.get("inverted_image"):
+        image = image.rotate(180)
+    image = apply_image_enhancement(image, settings.get("image_settings"))
+    return image
+
 def compute_image_hash(image):
     """Compute SHA-256 hash of an image."""
     image = image.convert("RGB")
