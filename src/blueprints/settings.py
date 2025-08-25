@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
 from cysystemd.reader import JournalReader, JournalOpenMode, Rule
 from utils.time_utils import calculate_seconds
+from utils.app_utils import get_display_drivers, generate_startup_image
+from utils.image_utils import process_image_for_preview
 from datetime import datetime, timedelta
 import os
 import pytz
@@ -15,7 +17,8 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
+    drivers = get_display_drivers()
+    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones, drivers = drivers)
 
 @settings_bp.route('/save_settings', methods=['POST'])
 def save_settings():
@@ -40,6 +43,7 @@ def save_settings():
 
         settings = {
             "name": form_data.get("deviceName"),
+            "display_type": form_data.get("display_type"),
             "orientation": form_data.get("orientation"),
             "inverted_image": form_data.get("invertImage"),
             "log_system_stats": form_data.get("logSystemStats"),
@@ -75,6 +79,30 @@ def shutdown():
         logger.info("Shutdown requested")
         os.system("sudo shutdown -h now")
     return jsonify({"success": True})
+
+@settings_bp.route('/preview_image', methods=['POST'])
+def preview_image():
+    try:
+        settings = request.json
+        # For the preview, we need a resolution. We can get it from the device config.
+        device_config = current_app.config['DEVICE_CONFIG']
+        resolution = device_config.get_resolution()
+
+        # Generate a sample image to apply the settings to.
+        # We'll use the startup image as a base.
+        image = generate_startup_image(resolution)
+
+        # Process the image with the provided settings.
+        processed_image = process_image_for_preview(image, settings, resolution)
+
+        # Return the image as a response.
+        img_io = io.BytesIO()
+        processed_image.save(img_io, 'PNG')
+        img_io.seek(0)
+        return Response(img_io.getvalue(), mimetype='image/png')
+    except Exception as e:
+        logger.error(f"Error generating preview image: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @settings_bp.route('/download-logs')
 def download_logs():
@@ -123,4 +151,3 @@ def download_logs():
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return Response(f"Error reading logs: {e}", status=500, mimetype="text/plain")
-

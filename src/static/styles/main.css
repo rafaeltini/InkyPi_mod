@@ -248,6 +248,18 @@ body {
     background-color: #16a085;
 }
 
+.action-button.dirty {
+    background-color: #f39c12;
+}
+
+.action-button.dirty:hover {
+    background-color: #e67e22;
+}
+
+.form-input.dirty {
+    border-left: 3px solid #f39c12;
+}
+
 .action-button.compact {
     font-size: 0.9rem;
     padding: 10px;
@@ -686,6 +698,11 @@ body {
     gap: 10px;
 }
 
+.tooltip {
+    cursor: help;
+    text-decoration: underline dotted;
+}
+
 .header-button {
     background-color: #1abc9c;
     color: white;
@@ -770,7 +787,7 @@ body {
 }
 
 .collapsible-content {
-    display: none;
+    display: block;
     padding: 0px 0px;
 }
 
